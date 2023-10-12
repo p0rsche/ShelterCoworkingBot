@@ -5,6 +5,7 @@ const statusCode = require("../../utils");
 const messageParts = require("../../messageParts");
 
 const WEBSOCKET_URL = "wss://wss.zenrus.ru/";
+const PARSE_MODE_MARKDOWN = "MarkdownV2";
 
 const getRates = () => {
   return new Promise((resolve, reject) => {
@@ -49,15 +50,21 @@ exports.handler = async (event) => {
   }
   const { command, botName, extra } = messageParts(message.text);
   if (botName === "ShelterCoworkingBot" || botName === null) {
-    switch (command) {
-      case "rates":
-        await sendMessage(message.chat.id, `USD ($) **${integerPart}**.__${fractionalPart}__`);
-        break;
-      case "start":
-        break;
-      default:
-        await sendMessage(message.chat.id, "I don't understand, buddy. The only command available is /rates");
+    try {
+      switch (command) {
+        case "rates":
+          await sendMessage(message.chat.id, `USD \\($\\) *${integerPart}*\\._${fractionalPart}_`, PARSE_MODE_MARKDOWN);
+          break;
+        case "start":
+          break;
+        default:
+          await sendMessage(message.chat.id, "I don't understand, buddy. The only command available is /rates");
+      }
+    } catch (error) {
+      console.log("Error while sending message: ", error);
+      return statusCode(500);
     }
+    
   }
 
   return statusCode(200)
