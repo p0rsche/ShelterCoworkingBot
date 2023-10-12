@@ -41,7 +41,7 @@ exports.handler = async (event) => {
 
   console.log("Received body: ", body);
   const usd = await getRates();
-  const num_array = usd.toString().split('.');
+  const [integerPart, fractionalPart] = usd.toString().split('.');
   const { message } = JSON.parse(event.body);
   if (!("text" in message)) {
     console.log("No text in message object. Exiting.");
