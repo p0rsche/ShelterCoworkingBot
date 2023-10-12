@@ -51,7 +51,7 @@ exports.handler = async (event) => {
   if (botName === "ShelterCoworkingBot" || botName === null) {
     switch (command) {
       case "rates":
-        await sendMessage(message.chat.id, "USD ($) " + "**" + num_array[0] + "**.__" + num_array[1] + "__");
+        await sendMessage(message.chat.id, `USD ($) **${integerPart}**.__${fractionalPart}__`);
         break;
       case "start":
         break;
