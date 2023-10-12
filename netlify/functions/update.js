@@ -4,6 +4,7 @@ const sendMessage = require("../../sendMessage");
 const statusCode = require("../../utils");
 const messageParts = require("../../messageParts");
 
+const BOT_NAME = "ShelterCoworkingBot";
 const WEBSOCKET_URL = "wss://wss.zenrus.ru/";
 const PARSE_MODE_MARKDOWN = "MarkdownV2";
 
@@ -15,11 +16,33 @@ const getRates = () => {
 
     ws.once('message', (data) => {
       const rates = data.toString();
-      ws.close();
       console.log("Received rates: ", rates);
-      resolve(rates.split(';')[0]);
+      ws.close();
+      resolve(rates);
     });
   })
+}
+
+const createStyledRate = (rate, title = 'USD \\($\\)') => {
+  const [integerPart, fractionalPart] = rate.toString().split('.');
+  
+  return `${title} *${integerPart}*\\._${fractionalPart}_`;
+}
+
+const createMarkdownRates = (rates) => {
+  const currencyRates = rates.split(';');
+  const [usd, eur] = currencyRates;
+  
+  const usdTemplate = createStyledRate(usd);
+  const eurTemplate = createStyledRate(eur, 'EUR \\(€\\)');
+
+  return [usdTemplate, eurTemplate].join('\n');
+}
+
+const sendRates = async (chat_id) => {
+  const rates = await getRates();
+  const markdownRates = createMarkdownRates(rates);
+  await sendMessage(chat_id, markdownRates, PARSE_MODE_MARKDOWN);
 }
 
 exports.handler = async (event) => {
@@ -41,19 +64,19 @@ exports.handler = async (event) => {
   }
 
   console.log("Received body: ", body);
-  const usd = await getRates();
-  const [integerPart, fractionalPart] = usd.toString().split('.');
+  
   const { message } = JSON.parse(event.body);
   if (!("text" in message)) {
     console.log("No text in message object. Exiting.");
     return statusCode(204)
   }
-  const { command, botName, extra } = messageParts(message.text);
-  if (botName === "ShelterCoworkingBot" || botName === null) {
+
+  const { command, botName, _extra } = messageParts(message.text);
+  if (botName === BOT_NAME || botName === null) {
     try {
       switch (command) {
         case "rates":
-          await sendMessage(message.chat.id, `USD \\($\\) *${integerPart}*\\._${fractionalPart}_`, PARSE_MODE_MARKDOWN);
+          await sendRates(message.chat.id);
           break;
         case "start":
           break;
