@@ -17,12 +17,6 @@ const CURRENCY_SYMBOLS = {
   'CNY': '¥'
 }
 
-const createStyledMarkdownRate = (symbol, value) => {
-  const [integerPart, fractionalPart] = value.toString().split('.');
-
-  return `${symbol} \\(${CURRENCY_SYMBOLS[symbol]}\\) *${integerPart}*\\._${fractionalPart}_`;
-}
-
 const getRates = () => {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(WEBSOCKET_URL);
@@ -31,7 +25,7 @@ const getRates = () => {
 
     ws.once('message', (data) => {
       const rates = data.toString();
-      console.log("Received rates: ", rates);
+      console.log("getRates(): Received rates=", rates);
       ws.close();
       const [USD, EUR] = rates.split(';');
       resolve({
@@ -62,6 +56,7 @@ const getExchangeRates = async () => {
   try {
     const response = await fetch(url, requestOptions);
     const textResponse = await response.text();
+    console.info('getExchangeRates(): text response=', textResponse);
     const jsonResponse = JSON.parse(textResponse);
     if (jsonResponse.success === true) {
       const results = {};
@@ -71,11 +66,21 @@ const getExchangeRates = async () => {
           results[currency] = (1 / jsonResponse.rates[currency]).toFixed(3);
         }
       }
+      console.info('getExchangeRates(): results=', results);
       return results;
     }
   } catch (e) {
     console.error('Error getting exchangerates:', e)
   }
+}
+
+const createStyledMarkdownRate = (symbol, value) => {
+  const [integerPart, fractionalPart] = value.toString().split('.');
+
+  const result = `${symbol} \\(${CURRENCY_SYMBOLS[symbol]}\\) *${integerPart}*\\._${fractionalPart}_`;
+
+  console.info(`createStyledMarkdownRate(${symbol}): `, result);
+  return result;
 }
 
 const createMarkdownRates = (title, rates) => {
@@ -85,6 +90,7 @@ const createMarkdownRates = (title, rates) => {
     tmpl += `${createStyledMarkdownRate(value, key)} `;
   }
 
+  console.info('createMarkdownRates(): ', tmpl);
   return tmpl;
 }
 
@@ -94,7 +100,11 @@ const sendRates = async (chat_id) => {
   const markdownZenRates = createMarkdownRates('ZenRates', zenRates);
   const markdownExchangeRates = createMarkdownRates('ExchangeRates API', exchangeRates);
 
-  await sendMessage(chat_id, [markdownZenRates, markdownExchangeRates].join('\n'), PARSE_MODE_MARKDOWN);
+  const message = [markdownZenRates, markdownExchangeRates].join('\n');
+
+  console.info('sendRates(): message=', message);
+
+  await sendMessage(chat_id, message, PARSE_MODE_MARKDOWN);
 }
 
 exports.handler = async (event) => {
