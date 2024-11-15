@@ -77,11 +77,6 @@ exports.handler = async (event) => {
       switch (command) {
         case "rates":
           await sendRates(message.chat.id);
-          break;
-        case "start":
-          break;
-        default:
-          await sendMessage(message.chat.id, "I don't understand, buddy. The only command available is /rates");
       }
     } catch (error) {
       console.log("Error while sending message: ", error);
