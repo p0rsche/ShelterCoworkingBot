@@ -61,7 +61,8 @@ const getExchangeRates = async () => {
 
   try {
     const response = fetch(url, requestOptions);
-    const jsonResponse = response.json();
+    const textResponse = response.text();
+    const jsonResponse = JSON.parse(textResponse);
     if (jsonResponse.success === true) {
       const results = {};
 
