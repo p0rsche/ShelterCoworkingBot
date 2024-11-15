@@ -87,7 +87,7 @@ const createMarkdownRates = (title, rates) => {
   let tmpl = `${title}: `;
 
   for(const [key, value] of Object.entries(rates)) {
-    tmpl += `${createStyledMarkdownRate(value, key)} `;
+    tmpl += `${createStyledMarkdownRate(key, value)} `;
   }
 
   console.info('createMarkdownRates(): ', tmpl);
@@ -96,7 +96,7 @@ const createMarkdownRates = (title, rates) => {
 
 const sendRates = async (chat_id) => {
   const zenRates = await getRates();
-  const exchangeRates = getExchangeRates();
+  const exchangeRates = await getExchangeRates();
   const markdownZenRates = createMarkdownRates('ZenRates', zenRates);
   const markdownExchangeRates = createMarkdownRates('ExchangeRates API', exchangeRates);
 
