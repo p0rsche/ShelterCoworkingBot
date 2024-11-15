@@ -81,8 +81,8 @@ const getExchangeRates = async () => {
 const createMarkdownRates = (title, rates) => {
   let tmpl = `${title}: `;
 
-  for(const key of rates) {
-    tmpl += `${createStyledMarkdownRate(rates[key], key)} `;
+  for(const [key, value] of Object.entries(rates)) {
+    tmpl += `${createStyledMarkdownRate(value, key)} `;
   }
 
   return tmpl;
