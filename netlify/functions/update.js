@@ -60,8 +60,8 @@ const getExchangeRates = async () => {
   const url = new URL(`https://api.apilayer.com/exchangerates_data/latest?${searchParams}`);
 
   try {
-    const response = fetch(url, requestOptions);
-    const textResponse = response.text();
+    const response = await fetch(url, requestOptions);
+    const textResponse = await response.text();
     const jsonResponse = JSON.parse(textResponse);
     if (jsonResponse.success === true) {
       const results = {};
@@ -81,8 +81,8 @@ const getExchangeRates = async () => {
 const createMarkdownRates = (title, rates) => {
   let tmpl = `${title}: `;
 
-  for(const key of rates) {
-    tmpl += `${createStyledMarkdownRate(rates[key], key)} `;
+  for(const [key, value] of Object.entries(rates)) {
+    tmpl += `${createStyledMarkdownRate(value, key)} `;
   }
 
   return tmpl;
