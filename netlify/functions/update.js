@@ -8,6 +8,21 @@ const BOT_NAME = "ShelterCoworkingBot";
 const WEBSOCKET_URL = "wss://wss.zenrus.ru/";
 const PARSE_MODE_MARKDOWN = "MarkdownV2";
 
+const EXCHANGERATES_API_KEY = process.env.EXCHANGERATES_API_KEY;
+
+const CURRENCY_SYMBOLS = {
+  'RUB': '₽',
+  'USD': '$',
+  'EUR': '€',
+  'CNY': '¥'
+}
+
+const createStyledMarkdownRate = (symbol, value) => {
+  const [integerPart, fractionalPart] = value.toString().split('.');
+
+  return `${symbol} \\(${CURRENCY_SYMBOLS[symbol]}\\) *${integerPart}*\\._${fractionalPart}_`;
+}
+
 const getRates = () => {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(WEBSOCKET_URL);
@@ -18,31 +33,67 @@ const getRates = () => {
       const rates = data.toString();
       console.log("Received rates: ", rates);
       ws.close();
-      resolve(rates);
+      const [USD, EUR] = rates.split(';');
+      resolve({
+        USD,
+        EUR,
+      });
     });
   })
 }
 
-const createStyledRate = (rate, title = 'USD \\($\\)') => {
-  const [integerPart, fractionalPart] = rate.toString().split('.');
-  
-  return `${title} *${integerPart}*\\._${fractionalPart}_`;
+const getExchangeRates = async () => {
+  const headers = new Headers();
+  headers.append('apikey', EXCHANGERATES_API_KEY);
+
+  const requestOptions = {
+    method: 'GET',
+    redirect: 'follow',
+    headers,
+  }
+
+  const base = 'RUB';
+  const symbols = ['USD', 'EUR', 'CNY'];
+
+  const searchParams = new URLSearchParams({ base, symbols });
+
+  const url = new URL(`https://api.apilayer.com/exchangerates_data/latest?${searchParams}`);
+
+  try {
+    const response = fetch(url, requestOptions);
+    const jsonResponse = response.json();
+    if (jsonResponse.success === true) {
+      const results = {};
+
+      for (const currency of symbols) {
+        if (currency in jsonResponse.rates) {
+          results[currency] = (1 / jsonResponse.rates[currency]).toFixed(3);
+        }
+      }
+      return results;
+    }
+  } catch (e) {
+    console.error('Error getting exchangerates:', e)
+  }
 }
 
-const createMarkdownRates = (rates) => {
-  const currencyRates = rates.split(';');
-  const [usd, eur] = currencyRates;
-  
-  const usdTemplate = createStyledRate(usd);
-  const eurTemplate = createStyledRate(eur, 'EUR \\(€\\)');
+const createMarkdownRates = (title, rates) => {
+  let tmpl = `${title}: `;
 
-  return [usdTemplate, eurTemplate].join('\n');
+  for(const key of rates) {
+    tmpl += `${createStyledMarkdownRate(rates[key], key)} `;
+  }
+
+  return tmpl;
 }
 
 const sendRates = async (chat_id) => {
-  const rates = await getRates();
-  const markdownRates = createMarkdownRates(rates);
-  await sendMessage(chat_id, markdownRates, PARSE_MODE_MARKDOWN);
+  const zenRates = await getRates();
+  const exchangeRates = getExchangeRates();
+  const markdownZenRates = createMarkdownRates('ZenRates', zenRates);
+  const markdownExchangeRates = createMarkdownRates('ExchangeRates API', exchangeRates);
+
+  await sendMessage(chat_id, [markdownZenRates, markdownExchangeRates].join('\n'), PARSE_MODE_MARKDOWN);
 }
 
 exports.handler = async (event) => {
@@ -58,13 +109,13 @@ exports.handler = async (event) => {
     return statusCode(500);
   }
 
-  if(!("message" in body)) {
+  if (!("message" in body)) {
     console.log("Empty message received. Exiting");
     return statusCode(204);
   }
 
   console.log("Received body: ", body);
-  
+
   const { message } = JSON.parse(event.body);
   if (!("text" in message)) {
     console.log("No text in message object. Exiting.");
@@ -82,7 +133,7 @@ exports.handler = async (event) => {
       console.log("Error while sending message: ", error);
       return statusCode(500);
     }
-    
+
   }
 
   return statusCode(200)
