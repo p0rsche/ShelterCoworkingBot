@@ -14,7 +14,8 @@ const CURRENCY_SYMBOLS = {
   'RUB': '₽',
   'USD': '$',
   'EUR': '€',
-  'CNY': '¥'
+  'CNY': '¥',
+  'KZT': '₸',
 }
 
 const getRates = () => {
@@ -47,7 +48,7 @@ const getExchangeRates = async () => {
   }
 
   const base = 'RUB';
-  const symbols = ['USD', 'EUR', 'CNY'];
+  const symbols = ['USD', 'EUR', 'CNY', 'KZT'];
 
   const searchParams = new URLSearchParams({ base, symbols });
 
@@ -77,7 +78,7 @@ const getExchangeRates = async () => {
 const createStyledMarkdownRate = (symbol, value) => {
   const [integerPart, fractionalPart] = value.toString().split('.');
 
-  const result = `${symbol} \\(${CURRENCY_SYMBOLS[symbol]}\\) *${integerPart}*\\._${fractionalPart}_`;
+  const result = `${CURRENCY_SYMBOLS[symbol]}*${integerPart}*\\._${fractionalPart}_`;
 
   console.info(`createStyledMarkdownRate(${symbol}): `, result);
   return result;
@@ -97,8 +98,8 @@ const createMarkdownRates = (title, rates) => {
 const sendRates = async (chat_id) => {
   const zenRates = await getRates();
   const exchangeRates = await getExchangeRates();
-  const markdownZenRates = createMarkdownRates('ZenRates', zenRates);
-  const markdownExchangeRates = createMarkdownRates('ExchangeRates API', exchangeRates);
+  const markdownZenRates = createMarkdownRates('CUR', zenRates);
+  const markdownExchangeRates = createMarkdownRates('TOM', exchangeRates);
 
   const message = [markdownZenRates, markdownExchangeRates].join('\n');
 
